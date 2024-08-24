@@ -10,12 +10,12 @@ using TMS.Models;
 
 namespace TMS.Controllers
 {
-    public class HomeController : Controller
+    public class TaskController : Controller
     {
         private readonly ApplicationDbContext _applicationDbContext;
-        private readonly ILogger<HomeController> _logger;
+        private readonly ILogger<TaskController> _logger;
 
-        public HomeController(ILogger<HomeController> logger,ApplicationDbContext applicationDbContext)
+        public TaskController(ILogger<TaskController> logger,ApplicationDbContext applicationDbContext)
         {
             _logger = logger;
             _applicationDbContext = applicationDbContext;
@@ -124,7 +124,7 @@ namespace TMS.Controllers
                 _applicationDbContext.TaskDetails.Remove(task);
                 _applicationDbContext.SaveChanges();
 
-                return Ok(new { message = "Task deleted successfully" });
+                return Ok();
 
             }
             catch (Exception)
