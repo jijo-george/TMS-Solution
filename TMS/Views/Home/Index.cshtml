@@ -1,8 +1,258 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model List<TaskModel>
+@{
+    ViewData["Title"] = "Task Page";
+    Layout = "~/Views/Shared/_TmsLayout.cshtml";
 }
+<style>
+    .invalid-feedback {
+        display: none;
+        color: red;
+    }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    .required-label{
+        font-weight:bold;
+    }
+    .required-label:after {
+        
+        content: " *";
+        color: red;
+        margin-left: 3px;
+    }
+</style>
+
+<h2>Task List</h2>
+<div class="d-flex justify-content-end mb-3">
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addTaskModal">Add Task</button>
 </div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null)
+        {
+            @foreach (var task in Model)
+            {
+                <tr>
+                    <td>@task.Name</td>
+                    <td>@task.Description</td>
+                    <td>@task.Status</td>
+                    <td>
+                        <button class="btn btn-primary edit-task" data-id="@task.Id">Edit</button>
+                        <a href="#" class="btn btn-danger delete-task" data-id="@task.Id">Delete</a>
+                    </td>
+
+                </tr>
+            }
+
+        }
+
+    </tbody>
+</table>
+
+<div id="customNotification" class="alert alert-success" style="display: none; position: fixed; top: 10px; right: 50px; z-index: 9999;">
+    <span id="customNotificationMessage"></span>
+    
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTaskModalLabel">Add New Task</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Form to add a task -->
+                <form id="addTask" method="post" action="/Home/AddTask">
+                    <input type="hidden" id="taskId" name="Id">
+
+                    <div class="form-group">
+                        <label for="taskTitle" class="required-label">Name</label>
+                        <input type="text" class="form-control" id="taskTitle" name="Name" required>
+                        <div class="invalid-feedback" id="nameError">Please enter a task name.</div>
+                        <div class="invalid-feedback" id="nameLengthError" style="display: none;">Task name cannot exceed 10 characters.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskDescription" class="required-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" name="Description" rows="3" required></textarea>
+                        <div class="invalid-feedback" id="descriptionError">Please enter a task description.</div>
+                        <div class="invalid-feedback" id="descriptionLengthError" style="display: none;">Task description cannot exceed 30 characters.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskdueDate" class="required-label">Due Date</label>
+                        <input type="datetime-local" class="form-control" id="taskdueDate" name="DueDate" required>
+                        <div class="invalid-feedback" id="dueDateError">Please select a due date.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskStatus" class="required-label">Status</label>
+                        <select class="form-control" id="taskStatus" name="Status" required>
+                            <option value="0">Incomplete</option>
+                            <option value="1">Complete</option>
+                        </select>
+                        <div class="invalid-feedback" id="statusError">Please select a status.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap CSS -->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- jQuery (Full version) -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    function showCustomNotification(message) {
+        console.log("Notification triggered with message:", message); 
+        $("#customNotificationMessage").text(message);
+        $("#customNotification").fadeIn();
+
+        setTimeout(function () {
+            $("#customNotification").fadeOut();
+        }, 3000);
+    }
+
+
+    $(document).ready(function () {
+        $("#addTask").submit(function (event) {
+            event.preventDefault(); // Prevents default form submission
+
+            var isValid = true;
+
+            // Clear previous error messages
+            $(".invalid-feedback").hide();
+
+            // Validate Name
+            if ($("#taskTitle").val().trim() === "") {
+                $("#nameError").show();
+                isValid = false;
+            } else if ($("#taskTitle").val().trim().length > 10) {
+                $("#nameLengthError").show();
+                isValid = false;
+            }
+
+            // Validate Description
+            if ($("#taskDescription").val().trim() === "") {
+                $("#descriptionError").show();
+                isValid = false;
+            } else if ($("#taskDescription").val().trim().length > 30) {
+                $("#descriptionLengthError").show();
+                isValid = false;
+            }
+
+            // Validate Due Date
+            if ($("#taskdueDate").val().trim() === "") {
+                $("#dueDateError").show();
+                isValid = false;
+            }
+
+            // Validate Status
+            if ($("#taskStatus").val().trim() === "") {
+                $("#statusError").show();
+                isValid = false;
+            }
+
+            if (isValid) {
+                var data = $(this).serialize();
+
+                $.ajax({
+                    type: $("#taskId").val() ? "PUT" : "POST",
+                    url: $("#taskId").val() ? "/Home/EditTask" : "/Home/AddTask",
+                    data: data,
+                    success: function (response) {
+                        showCustomNotification("Task saved successfully!");
+                        setTimeout(function () {
+                            window.location.href = "/Home/Index";
+                        }, 1000);
+                    },
+                    error: function (xhr, status, error) {
+                        alert("Error: " + xhr.responseText);
+                    }
+                });
+            }
+        });
+
+        $("#taskTitle").on("input", function () {
+            var taskTitle = $(this).val();
+            if (taskTitle.length > 10) {
+                $("#nameLengthError").show();
+            } else {
+                $("#nameLengthError").hide();
+            }
+        });
+
+        $("#taskDescription").on("input", function () {
+            var taskDescription = $(this).val();
+            if (taskDescription.length > 30) {
+                $("#descriptionLengthError").show();
+            } else {
+                $("#descriptionLengthError").hide();
+            }
+        });
+
+        $(".edit-task").click(function () {
+            var taskId = $(this).data("id");
+
+            $.ajax({
+                type: "GET",
+                url: "/Home/GetTask",
+                data: { id: taskId },
+                success: function (task) {
+                    $("#taskTitle").val(task.name);
+                    $("#taskDescription").val(task.description);
+                    $("#taskdueDate").val(task.dueDate);
+                    $("#taskStatus").val(task.status);
+                    $("#taskId").val(task.id);
+                    $("#addTaskModalLabel").text("Edit Task");
+                    $("#addTaskModal").modal("show");
+                },
+                error: function (xhr, status, error) {
+                    alert("Error: " + xhr.responseText);
+                }
+            });
+        });
+
+        $(".delete-task").click(function (event) {
+            event.preventDefault();
+            var taskId = $(this).data("id");
+
+            $.ajax({
+                type: "DELETE",
+                url: "/Home/DeleteTask",
+                data: { id: taskId },
+                success: function () {
+                    showCustomNotification("Task deleted successfully!");
+                    setTimeout(function () {
+                        window.location.href = "/Home/Index";
+                    }, 1000);
+                },
+                error: function (xhr, status, error) {
+                    alert("Error: " + xhr.responseText);
+                }
+            });
+        });
+    });
+
+
+</script>
